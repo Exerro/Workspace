@@ -306,7 +306,7 @@ function workspace.open( wname )
 		if setfenv then setfenv( shell_f, env ) end
 
 		local filter = nil
-		local ev = {}
+		local ev = { "workspace.lua", "init", "--shell" }
 
 		while active and active.running do
 			if not filter or filter == ev[1] then

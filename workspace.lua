@@ -89,6 +89,10 @@ if command == "workspace.help" then
 	end
 elseif command == "workspace.init" then
 	shell.setCompletionFunction( shell.getRunningProgram(), autocomplete )
+
+	if flags.shell then
+		shell.run "rom/programs/shell"
+	end
 elseif command == "workspace.show" then
 	if flags.interactive then
 		return print( "`show --interactive` not yet implemented" ) or show_interactive( flags.all )
