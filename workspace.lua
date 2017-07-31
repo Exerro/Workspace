@@ -97,7 +97,7 @@ elseif command == "workspace.init" then
 	end
 elseif command == "workspace.show" then
 	if flags.interactive then
-		return print( "`show --interactive` not yet implemented" ) or show_interactive( flags.all )
+		return show_interactive( flags.all )
 	end
 
 	local list = workspace.get_workspace_list( flags.all and workspace.WORKSPACE_INVALID or workspace.WORKSPACE_EMPTY )

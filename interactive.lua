@@ -11,22 +11,21 @@ local function drawheader( name, w, h )
 
 	term.setCursorPos( 2, 2 )
 	term.setTextColour( colours.white )
-	term.write "Help"
+	term.write( name )
 	term.setBackgroundColour( colours.cyan )
 	term.setTextColour( colours.white )
 	term.setCursorPos( w - 6, 2 )
 	term.write( root_interactive and " back " or " exit " )
 end
 
-local function drawscrollbar( w, h, content_height, scroll )
-	local ch = h - 6
+local function drawscrollbar( w, h, ch, content_height, scroll )
 	local scrollbar_height = math.floor( math.max( 2, ch * ch / content_height ) + 0.5 )
 	local scrollbar_offset = math.floor( scroll / (content_height - ch) * (ch - scrollbar_height) + 0.5 )
 
 	term.setBackgroundColour( colours.grey )
 
 	for i = 0, ch - 1 do
-		term.setCursorPos( w - 1, 6 + i )
+		term.setCursorPos( w - 1, h - ch + i )
 
 		if i == scrollbar_offset then
 			term.setBackgroundColour( colours.lightGrey )
@@ -40,11 +39,10 @@ end
 
 local function eventloop( draw, handle )
 	while true do
-		local w, h, scrollbar, content_height, scroll = draw()
-		local ch = h - 6
+		local w, h, ch, scrollbar, content_height, scroll = draw()
 
 		if scrollbar then
-			drawscrollbar( w, h, content_height, scroll )
+			drawscrollbar( w, h, ch, content_height, scroll )
 		end
 
 		local ev = { os.pullEvent() }
@@ -65,6 +63,10 @@ local function eventloop( draw, handle )
 			handle( unpack( ev ) )
 		end
 	end
+end
+
+local function interactive( wname )
+	
 end
 
 local function help_interactive( topic )
@@ -128,7 +130,7 @@ local function help_interactive( topic )
 			content_height = content_height + 2
 		end
 
-		return w, h, scrollbar, content_height, scroll
+		return w, h, ch, scrollbar, content_height, scroll
 	end
 
 	local function handle( event, ... )
@@ -161,6 +163,62 @@ local function help_interactive( topic )
 
 				breadcrumbs[3] = lt:match "^workspace (%w+)"
 				scroll = 0
+			end
+		end
+	end
+
+	eventloop( draw, handle )
+end
+
+local function show_interactive( all )
+	local scroll = 0
+	local ch = 0
+	local scrollbar = false
+	local content_height = 0
+	local w, h = term.getSize()
+	local t = {}
+
+	local function draw()
+		w, h = term.getSize()
+		ch = h - 5
+		scrollbar = false
+		scrollbar_height = 0
+		t = workspace.get_workspace_list( all and workspace.WORKSPACE_NOCONFIG or workspace.WORKSPACE_EMPTY )
+
+		drawheader( "Show", w, h )
+
+		if #t > ch then
+			scrollbar = true
+			content_height = #t
+		end
+
+		term.setBackgroundColour( colours.white )
+
+		for i = 1, math.min( #t - scroll, ch ) do
+			local wspace = t[i + scroll]
+			term.setCursorPos( 2, i + 4 )
+			term.setTextColour( wspace.mode == workspace.WORKSPACE_NOCONFIG and colours.yellow or wspace.mode == workspace.WORKSPACE_EMPTY and colours.lightGrey or colours.grey )
+			term.write( wspace.name )
+			term.setTextColour( colours.blue )
+			term.setCursorPos( scrollbar and w - 5 or w - 4, i + 4 )
+			term.write "..."
+		end
+
+		return w, h, ch, scrollbar, content_height, scroll
+	end
+
+	local function handle( event, ... )
+		if event == "scroll" then
+			scroll = scroll + ...
+		elseif event == "mouse_click" and (...) == 1 then
+			local _, x, y = ...
+
+			if x <= w - (scrollbar and 3 or 2) and x >= w - (scrollbar and 5 or 4) and y >= 5 and y <= h - 1 then
+				local wspace = t[y - 4 + scroll]
+
+				if wspace then
+					return interactive( wspace.name )
+				end
 			end
 		end
 	end
