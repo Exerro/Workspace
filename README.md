@@ -9,28 +9,28 @@ It even launches the shell in the workspace, so the startup program and any sett
 
 ### Usage
 First of all, run `workspace init`. This will add auto-complete so you can tab through options using the shell's autocomplete feature. This is optional but really helps. This can be done in startup, just once.
+
 After that, creating a workspace is very simple. Use `workspace create WorkspaceName`.
 You might want to add a root folder or file to the workspace, using `workspace link add WorkspaceName LinkName /path`. After that, the folder or file named LinkName in the workspace will point to /path. This works the same for files too.
+
 To open your workspace, use `workspace open WorkspaceName`. You can get back to the parent shell using `workspace close` in the running workspace. Note, you'll have to run `workspace init` again in the sub-shell to get completion, so maybe put it at the top of a startup file.
+
 There's fairly detailed help in-game, as well as a full command list, just use `workspace help` for more info.
 
 ### Install
-`pastebin get 5tuchQr2 workspace.lua` (https://pastebin.com/5tuchQr2)
+* `wget https://github.com/Exerro/Workspace/releases/download/v0.1.0/workspace.min.lua workspace.lua` ([GitHub download](https://github.com/Exerro/Workspace/releases))
+* `pastebin get 5tuchQr2 workspace.lua` ([Pastebin download](https://pastebin.com/5tuchQr2), deprecated)
 
 You should be able to name the file anything.
 Note, this was built using a WIP preprocessor I've developed ([Amend](https://github.com/Exerro/Amend)). Build instructions will come soon, but the compiled output is perfectly readable.
+
 In addition, this has been tested on CCEmuX using the latest CC build (from the GitHub source). This should work on all recent(ish) versions of CC, however, although as some functionality has had to be copied (e.g. os.loadAPI) the functions will behave like the newer implementations.
 
 ### Screenies
 ![](http://i.imgur.com/I9Bocjs.png)
-![](http://i.imgur.com/TBaa7QR.gif)
-![](http://i.imgur.com/jAklXZT.png)
-![](http://i.imgur.com/cUgq1Wj.png)
 
-### Todo
-* Implement --interactive flag
-* Nice installer with option to move all files into a workspace and set up startup to `workspace init`
-* Use @WorkspaceName in links to refer to other workspaces e.g. `link add server clientAPI.lua @client/api.lua`
-* More config options for workspaces and the program/API itself e.g. run `workspace init` on startup
-* Temporary sessions e.g. for testing a program in a blank environment
-* Encrypted/compressed workspace directories
+![](http://i.imgur.com/TBaa7QR.gif)
+
+![](http://i.imgur.com/jAklXZT.png)
+
+![](http://i.imgur.com/cUgq1Wj.png)
