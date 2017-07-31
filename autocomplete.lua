@@ -50,6 +50,12 @@ function autocomplete( shell, par_number, cur_text, last_text )
 				suggestions = filter_text( t, cur_text )
 			end
 
+			if #params < #command_data.params - 1 then
+				for i = 1, #suggestions do
+					suggestions[i] = suggestions[i] .. " "
+				end
+			end
+
 			if ("--interactive"):find( "^" .. escape_patterns( cur_text ) ) then
 				insert( suggestions, ("--interactive"):sub( #cur_text + 1 ) )
 			end

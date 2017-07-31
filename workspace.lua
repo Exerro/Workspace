@@ -26,7 +26,7 @@ program = {
 		} },
 		{ name = "open", alias = "o", description = "Opens a workspace, or shows the open workspace if no name is given", flags = {}, params = { "workspace-name" } },
 		{ name = "close", alias = "x", description = "Closes the open workspace", flags = {}, params = {} },
-		{ name = "init", alias = "i", description = "Initialises workspace-related globals", flags = { "shell" }, params = {}, hidden = true }
+		{ name = "init", alias = nil, description = "Initialises workspace-related globals", flags = { "shell" }, params = {}, hidden = true }
 	}
 }
 

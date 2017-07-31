@@ -10,6 +10,7 @@
 
 local function fmtcmd( cmd, nodesc )
 	return cmd.name
+		.. (cmd.alias and " (-" .. cmd.alias .. ")" or "")
 	    .. (#cmd.params > 0 and " <" or "") .. table.concat( cmd.params, "> <" ) .. (#cmd.params > 0 and ">" or "")
 	    .. (#cmd.flags > 0 and " [--" or "") .. table.concat( cmd.flags, "] [--" ) .. (#cmd.flags > 0 and "]" or "")
 	    .. (nodesc and "" or " - " .. cmd.description)
@@ -63,7 +64,7 @@ local function get_command_and_data( args )
 		local set = false
 
 		for i = 1, #t.commands do
-			if t.commands[i].name == cmd or "-" .. t.commands[i].alias == cmd then
+			if t.commands[i].name == cmd or t.commands[i].alias and "-" .. t.commands[i].alias == cmd then
 				command = command .. "." .. t.commands[i].name
 				pop_bottom( args )
 				t = t.commands[i]
@@ -142,9 +143,9 @@ local function filter_command_list( list, cur_text )
 
 	for i = 1, #list do
 		if cur_text == "" or list[i].name:find( "^" .. escape_patterns( cur_text ) ) then
-			insert( t, list[i].name:sub( #cur_text + 1 ) )
-		elseif ("-" .. list[i].alias):find( "^" .. escape_patterns( cur_text ) ) then
-			insert( t, list[i].alias:sub( #cur_text ) )
+			insert( t, list[i].name:sub( #cur_text + 1 ) .. " " )
+		elseif list[i].alias and ("-" .. list[i].alias):find( "^" .. escape_patterns( cur_text ) ) then
+			insert( t, list[i].alias:sub( #cur_text ) .. " " )
 		end
 	end
 
