@@ -66,7 +66,7 @@ local function eventloop( draw, handle )
 end
 
 local function interactive( wname )
-	
+
 end
 
 local function help_interactive( topic )
@@ -183,7 +183,7 @@ local function show_interactive( all )
 		ch = h - 5
 		scrollbar = false
 		scrollbar_height = 0
-		t = workspace.get_workspace_list( all and workspace.WORKSPACE_NOCONFIG or workspace.WORKSPACE_EMPTY )
+		t = workspace.list_workspaces( all and workspace.WORKSPACE_NOCONFIG or workspace.WORKSPACE_EMPTY )
 
 		drawheader( "Show", w, h )
 
