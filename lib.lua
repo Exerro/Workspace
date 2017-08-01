@@ -79,6 +79,9 @@ end
 
 function workspace.get_workspace_dir()
 	parent_workspace( get_workspace_dir )
+	if not getconf "workspaces_path" then
+		print "Here"
+	end
 	return getconf "workspaces_path" or "/workspaces"
 end
 

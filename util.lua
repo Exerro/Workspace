@@ -31,7 +31,7 @@ local function assert0( a, ... )
 end
 
 local function getconf( idx )
-	local h = fs.open( fs.getDir( shell.getRunningProgram() or "" ) .. "/.workspace", "r" )
+	local h = fs.open( ".workspace", "r" )
 	local contents = h and h.readAll() or ""
 	if h then h.close() end
 	local data = textutils.unserialize( contents )
@@ -40,7 +40,7 @@ end
 
 local function setconf( conf )
 	local data = textutils.serialize( conf )
-	local h = fs.open( fs.getDir( shell.getRunningProgram() or "" ) .. "/.workspace", "w" )
+	local h = fs.open( ".workspace", "w" )
 	if h then
 		h.write( data )
 		h.close()
