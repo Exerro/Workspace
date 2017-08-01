@@ -219,8 +219,6 @@ local function linewrap( text, len )
 				s = i
 				sc = 1
 			end
-		elseif ch:find "[`<>%[%]]" then
-			len = len + 1
 		end
 
 		i = i + 1
@@ -246,12 +244,12 @@ local function wordwrap( text, len )
 	return t
 end
 
-local function writef( text, s )
+local function writef( text, s, primary, secondary )
 	if s == "`" or s == "%]" or s == ">" then
-		term.setTextColour( colours.lightGrey )
+		term.setTextColour( secondary )
 
 		if text:find( s ) then
-			term.write( text:sub( 1, text:find( s ) - 1 ) )
+			term.write( text:sub( 1, text:find( s ) ) )
 			text = text:match( "^.-" .. s .. "(.*)" )
 		else
 			term.write( text )
@@ -259,7 +257,7 @@ local function writef( text, s )
 		end
 	end
 
-	term.setTextColour( colours.grey )
+	term.setTextColour( primary )
 
 	if text:find "%[" or text:find "<" or text:find "`" then
 		local a, b, c = text:find "%[", text:find "<", text:find "`"
@@ -267,8 +265,10 @@ local function writef( text, s )
 		local p = a and _p and math.min( a, _p ) or a or _p
 
 		term.write( text:sub( 1, p - 1 ) )
+		term.setTextColour( secondary )
+		term.write( text:sub( p, p ) )
 
-		return writef( text:sub( p + 1 ), text:sub( p, p ) == "`" and "`" or text:sub( p, p ) == "<" and ">" or "%]" )
+		return writef( text:sub( p + 1 ), text:sub( p, p ) == "`" and "`" or text:sub( p, p ) == "<" and ">" or "%]", primary, secondary )
 	else
 		term.write( text )
 		return nil

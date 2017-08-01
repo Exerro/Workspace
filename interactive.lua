@@ -65,7 +65,7 @@ local function help_interactive( topic )
 
 		for i = 1, math.min( #t - scroll, ch ) do
 			term.setCursorPos( 2, i + 5 )
-			c = writef( t[i + scroll], c )
+			c = writef( t[i + scroll], c, colours.grey, colours.lightGrey )
 		end
 
 		if #breadcrumbs == 1 then
