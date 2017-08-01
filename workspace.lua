@@ -101,7 +101,7 @@ elseif command == "workspace.show" then
 		return show_interactive( flags.all )
 	end
 
-	local list = workspace.get_workspace_list( flags.all and workspace.WORKSPACE_INVALID or workspace.WORKSPACE_EMPTY )
+	local list = workspace.list_workspaces( flags.all and workspace.WORKSPACE_INVALID or workspace.WORKSPACE_EMPTY )
 	local maxwidth = 0
 	local red, orange, green = {}, {}, {}
 

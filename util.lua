@@ -176,7 +176,7 @@ local function file_find( cur_text )
 	local r = {}
 
 	if not cur_text:find "/" then
-		local t = workspace.get_workspace_list( workspace.WORKSPACE_EMPTY ):names()
+		local t = workspace.list_workspaces( workspace.WORKSPACE_EMPTY ):names()
 
 		for i = #t, 1, -1 do
 			t[i] = "@" .. t[i]

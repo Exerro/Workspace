@@ -31,7 +31,7 @@ function autocomplete( shell, par_number, cur_text, last_text )
 			local param = command_data.params[#params + 1]
 
 			if param == "workspace-name" or param == "current-workspace-name" then
-				suggestions = filter_text( workspace.get_workspace_list( workspace.WORKSPACE_EMPTY ):names(), cur_text )
+				suggestions = filter_text( workspace.list_workspaces( workspace.WORKSPACE_EMPTY ):names(), cur_text )
 			elseif param == "new-workspace-name" then
 				suggestions = cur_text == "" and { "workspace-name" } or {}
 			elseif param == "link-name" and wname then

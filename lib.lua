@@ -82,12 +82,6 @@ function workspace.get_workspace_dir(...)
 	return WORKSPACE_DIR
 end
 
-function workspace.get_path( name )
-	parent_workspace( get_path, name )
-
-	return WORKSPACE_DIR .. "/" .. name
-end
-
 function workspace.exists( name, filter )
 	parent_workspace( name, filter )
 
@@ -95,26 +89,22 @@ function workspace.exists( name, filter )
 	local mode = workspace.WORKSPACE_INVALID
 
 	if fs.isDir( path ) then
-		mode = workspace.WORKSPACE_NOCONFIG
-
-		if fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) then
-			mode = workspace.WORKSPACE_EMPTY
-
-			if #fs.list( path ) > 1 then
-				mode = workspace.WORKSPACE_VALID
-			end
-		end
+		mode = #fs.list( path ) > 1 and workspace.WORKSPACE_VALID
+		    or fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) and workspace.WORKSPACE_EMPTY
+			or workspace.WORKSPACE_NOCONFIG
 	end
 
-	if not filter or filter <= mode then
-		return path, mode
-	end
-
-	return nil, mode
+	return (not filter or filter <= mode) and path or nil, mode
 end
 
-function workspace.get_workspace_list( filter )
-	parent_workspace( get_workspace_list, filter )
+function workspace.get_path( name )
+	parent_workspace( get_path, name )
+
+	return WORKSPACE_DIR .. "/" .. name
+end
+
+function workspace.list_workspaces( filter )
+	parent_workspace( list_workspaces, filter )
 
 	local file_list = fs.list( WORKSPACE_DIR )
 	local result = { names = names }
@@ -124,15 +114,9 @@ function workspace.get_workspace_list( filter )
 		local mode = workspace.WORKSPACE_INVALID
 
 		if fs.isDir( path ) then
-			mode = workspace.WORKSPACE_NOCONFIG
-
-			if fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) then
-				mode = workspace.WORKSPACE_EMPTY
-
-				if #fs.list( path ) > 1 then
-					mode = workspace.WORKSPACE_VALID
-				end
-			end
+			mode = #fs.list( path ) > 1 and workspace.WORKSPACE_VALID
+			    or fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) and workspace.WORKSPACE_EMPTY
+				or workspace.WORKSPACE_NOCONFIG
 		end
 
 		if not filter or filter <= mode then
@@ -148,8 +132,6 @@ function workspace.create( name )
 
 	if workspace.exists( name, workspace.WORKSPACE_EMPTY ) then
 		return false, "workspace '" .. name .. "' already exists"
-	elseif workspace.exists( name, workspace.WORKSPACE_NOCONFIG ) then
-		return false, "cannot create folder '" .. workspace.get_path( name ) .. "'"
 	else
 		local path = workspace.get_path( name )
 		local h
