@@ -31,7 +31,7 @@ local function assert0( a, ... )
 end
 
 local function getconf( idx )
-	local h = fs.open( fs.getDir( shell.getRunningProgram() ) .. "/.workspace", "r" )
+	local h = fs.open( fs.getDir( shell.getRunningProgram() or "" ) .. "/.workspace", "r" )
 	local contents = h and h.readAll() or ""
 	if h then h.close() end
 	local data = textutils.unserialize( contents )
@@ -40,7 +40,7 @@ end
 
 local function setconf( conf )
 	local data = textutils.serialize( conf )
-	local h = fs.open( fs.getDir( shell.getRunningProgram() ) .. "/.workspace", "w" )
+	local h = fs.open( fs.getDir( shell.getRunningProgram() or "" ) .. "/.workspace", "w" )
 	if h then
 		h.write( data )
 		h.close()
@@ -194,30 +194,30 @@ local function filter_text( list, cur_text )
 	return r
 end
 
-local function file_find( cur_text )
+local function file_find( cur_text, incl_refs )
 	local begin = cur_text:match ".+/" or ""
-	local dir = (cur_text:match "(.+)/" or ""):gsub( "^@([^/]+)", workspace.get_path, 1 )
+	local dir = (cur_text:match "(.+)/" or ""); if incl_refs then dir = dir:gsub( "^@([^/]+)", workspace.get_path, 1 ) end
 	local file = cur_text:gsub( ".+/", "" )
 	local files = fs.isDir( dir ) and fs.list( dir ) or {}
 	local r = {}
 
-	if not cur_text:find "/" then
+	for i = 1, #files do
+		if files[i]:find( "^" .. escape_patterns( file ) ) then
+			r[#r + 1] = begin .. files[i] .. (fs.isDir( dir .. "/" .. files[i] ) and "/" or "")
+		end
+	end
+
+	if incl_refs and not cur_text:find "/" then
 		local t = workspace.list_workspaces( workspace.WORKSPACE_EMPTY ):names()
 
 		for i = #t, 1, -1 do
 			t[i] = "@" .. t[i]
 
 			if t[i]:find( "^" .. escape_patterns( cur_text ) ) then
-				r[#r + 1] = t[i]
+				r[#r + 1] = t[i] .. "/"
 			else
 				table.remove( t, i )
 			end
-		end
-	end
-
-	for i = 1, #files do
-		if files[i]:find( "^" .. escape_patterns( file ) ) then
-			r[#r + 1] = begin .. files[i]
 		end
 	end
 
