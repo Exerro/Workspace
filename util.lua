@@ -31,7 +31,6 @@ local function assert0( a, ... )
 end
 
 local function getconf( idx )
-	print( fs.getDir( shell.getRunningProgram() ) .. "/.workspace" )
 	local h = fs.open( fs.getDir( shell.getRunningProgram() ) .. "/.workspace", "r" )
 	local contents = h and h.readAll() or "{}"
 	if h then h.close() end

@@ -2,15 +2,12 @@
 local ARGS = { ... }
 local root_interactive = false
 
--- @define WORKSPACE_DIR ('/workspaces')
 -- @define WORKSPACE_META ('{\n\tname = %q,\n\tlinks = {\n\t\t["rom"] = "rom"\n\t}\n}')
 
 -- @include lib
 -- @include autocomplete
 -- @include util
 -- @include interactive
-
-print( getconf "workspace_dir" )
 
 -- @localise program
 program = {
