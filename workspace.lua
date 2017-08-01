@@ -10,6 +10,8 @@ local root_interactive = false
 -- @include util
 -- @include interactive
 
+print( getconf "workspace_dir" )
+
 -- @localise program
 program = {
 	name = "workspace",

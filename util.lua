@@ -30,6 +30,24 @@ local function assert0( a, ... )
 	return a or error( ..., 0 ), ...
 end
 
+local function getconf( idx )
+	print( fs.getDir( shell.getRunningProgram() ) .. "/.workspace" )
+	local h = fs.open( fs.getDir( shell.getRunningProgram() ) .. "/.workspace", "r" )
+	local contents = h and h.readAll() or "{}"
+	if h then h.close() end
+	local data = textutils.unserialize( contents )
+	return type( data ) == "table" and (idx and data[idx] or data) or nil
+end
+
+local function setconf( conf )
+	local data = textutils.serialize( conf )
+	local h = fs.open( fs.getDir( shell.getRunningProgram() ) .. "/.workspace", "w" )
+	if h then
+		h.write( data )
+		h.close()
+	end
+end
+
 local function getcmd( name )
 	local t = program
 	for section in name:gmatch "%.([^%.]+)" do
