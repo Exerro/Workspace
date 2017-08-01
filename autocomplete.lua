@@ -69,24 +69,14 @@ function autocomplete( shell, par_number, cur_text, last_text )
 					suggestions[i] = suggestions[i] .. " "
 				end
 			end
-
-			if ("--interactive"):find( "^" .. escape_patterns( cur_text ) ) then
-				insert( suggestions, ("--interactive"):sub( #cur_text + 1 ) )
-			end
 		end
 
-		if #suggestions == 0 then
-			for k, v in pairs( flags ) do
-				if not v then
-					if cur_text == "" or ("--" .. k):find( "^" .. escape_patterns( cur_text ) ) then
-						insert( suggestions, "--" .. k )
-					elseif ("-" .. k:sub( 1, 1 )):find( "^" .. escape_patterns( cur_text:sub( 1, 1 ) ) ) then
-						insert( suggestions, "-" .. k:sub( 1, 1 ) )
-					end
+		for k, v in pairs( flags ) do
+			if not v then
+				if cur_text == "" or ("--" .. k):find( "^" .. escape_patterns( cur_text ) ) then
+					insert( suggestions, ("--" .. k):sub( #cur_text + 1 ) )
 				end
 			end
-
-			suggestions = filter_text( suggestions, cur_text )
 		end
 
 		return suggestions
