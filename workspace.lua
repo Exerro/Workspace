@@ -93,6 +93,7 @@ elseif command == "workspace.init" then
 	shell.setCompletionFunction( shell.getRunningProgram(), autocomplete )
 
 	if flags.shell then
+		shell.run "rom/startup"
 		shell.run "rom/programs/shell"
 	end
 elseif command == "workspace.show" then
