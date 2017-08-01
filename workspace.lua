@@ -1,5 +1,6 @@
 
 local ARGS = { ... }
+local root_interactive = false
 
 -- @define WORKSPACE_DIR ('/workspaces')
 -- @define WORKSPACE_META ('{\n\tname = %q,\n\tlinks = {\n\t\t["rom"] = "rom"\n\t}\n}')
@@ -7,6 +8,7 @@ local ARGS = { ... }
 -- @include lib
 -- @include autocomplete
 -- @include util
+-- @include interactive
 
 -- @localise program
 program = {
@@ -15,7 +17,7 @@ program = {
 	flags = {},
 	params = {},
 	commands = {
-		{ name = "help", alias = "h", description = "Displays help", flags = {}, params = { "help-topic" } },
+		{ name = "help", alias = "h", description = "Displays help", flags = { "interactive" }, params = { "help-topic" } },
 		{ name = "show", alias = "s", description = "Displays a list of all workspaces", flags = { "all", "interactive" }, params = {} },
 		{ name = "create", alias = "c", description = "Creates a new workspace", flags = {}, params = { "new-workspace-name" } },
 		{ name = "remove", alias = "r", description = "Removes an existing workspace, use --hard to remove all workspace files", flags = { "hard" }, params = { "workspace-name" } },
@@ -41,7 +43,7 @@ term.setTextColour( colours.white )
 
 if command == "workspace.help" then
 	if flags.interactive then
-		return print( "`help --interactive` not yet implemented" ) or help_interactive()
+		return help_interactive( params[1] )
 	else
 		local y = 1
 
@@ -95,7 +97,7 @@ elseif command == "workspace.init" then
 	end
 elseif command == "workspace.show" then
 	if flags.interactive then
-		return print( "`show --interactive` not yet implemented" ) or show_interactive( flags.all )
+		return show_interactive( flags.all )
 	end
 
 	local list = workspace.get_workspace_list( flags.all and workspace.WORKSPACE_INVALID or workspace.WORKSPACE_EMPTY )

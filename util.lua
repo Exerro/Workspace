@@ -182,3 +182,76 @@ local function file_find( cur_text )
 
 	return r
 end
+
+local function linewrap( text, len )
+	local i = 1
+	local s = nil
+	local sc = 0
+
+	while i <= len and i <= #text do
+		local ch = text:sub( i, i )
+
+		if ch == "\n" then
+			return text:sub( 1, i - 1 ), text:sub( i + 1 )
+		elseif ch:find "%s" then
+			if s and i == s + sc then
+				sc = sc + 1
+			else
+				s = i
+				sc = 1
+			end
+		elseif ch:find "[`<>%[%]]" then
+			len = len + 1
+		end
+
+		i = i + 1
+	end
+
+	if i <= len then
+		return text, ""
+	elseif s then
+		return text:sub( 1, s - 1 ), text:sub( s + sc )
+	else
+		return text:sub( 1, len ), text:sub( len + 1 )
+	end
+end
+
+local function wordwrap( text, len )
+	local t = {}
+	t[1], text = linewrap( text, len )
+
+	while #text > 0 do
+		t[#t + 1], text = linewrap( text, len )
+	end
+
+	return t
+end
+
+local function writef( text, s )
+	if s == "`" or s == "%]" or s == ">" then
+		term.setTextColour( colours.lightGrey )
+
+		if text:find( s ) then
+			term.write( text:sub( 1, text:find( s ) - 1 ) )
+			text = text:match( "^.-" .. s .. "(.*)" )
+		else
+			term.write( text )
+			return s
+		end
+	end
+
+	term.setTextColour( colours.grey )
+
+	if text:find "%[" or text:find "<" or text:find "`" then
+		local a, b, c = text:find "%[", text:find "<", text:find "`"
+		local _p = b and c and math.min( b, c ) or b or c
+		local p = a and _p and math.min( a, _p ) or a or _p
+
+		term.write( text:sub( 1, p - 1 ) )
+
+		return writef( text:sub( p + 1 ), text:sub( p, p ) == "`" and "`" or text:sub( p, p ) == "<" and ">" or "%]" )
+	else
+		term.write( text )
+		return nil
+	end
+end
