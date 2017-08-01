@@ -79,7 +79,7 @@ end
 
 function workspace.get_workspace_dir()
 	parent_workspace( get_workspace_dir )
-	return getconf "workspace_dir"
+	return getconf "workspaces_path" or "/workspaces"
 end
 
 function workspace.exists( name, filter )

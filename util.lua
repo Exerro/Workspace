@@ -32,7 +32,7 @@ end
 
 local function getconf( idx )
 	local h = fs.open( fs.getDir( shell.getRunningProgram() ) .. "/.workspace", "r" )
-	local contents = h and h.readAll() or "{}"
+	local contents = h and h.readAll() or ""
 	if h then h.close() end
 	local data = textutils.unserialize( contents )
 	return type( data ) == "table" and (idx and data[idx] or data) or nil
@@ -44,7 +44,16 @@ local function setconf( conf )
 	if h then
 		h.write( data )
 		h.close()
+		return true
 	end
+	return false
+end
+
+local function initconf()
+	return setconf {
+		workspaces_path = "/workspaces";
+		install_path = fs.getDir( shell.getRunningProgram() );
+	}
 end
 
 local function getcmd( name )

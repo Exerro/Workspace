@@ -91,6 +91,12 @@ if command == "workspace.help" then
 elseif command == "workspace.init" then
 	shell.setCompletionFunction( shell.getRunningProgram(), autocomplete )
 
+	if not getconf() then
+		if not initconf() then
+			return error( "failed to initialise config", 0 )
+		end
+	end
+
 	if flags.shell then
 		shell.run "rom/startup"
 		shell.run "rom/programs/shell"
