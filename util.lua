@@ -169,14 +169,29 @@ local function filter_text( list, cur_text )
 end
 
 local function file_find( cur_text )
-	local dir = cur_text:match "(.+)/" or ""
+	local begin = cur_text:match ".+/" or ""
+	local dir = (cur_text:match "(.+)/" or ""):gsub( "^@([^/]+)", workspace.get_path, 1 )
 	local file = cur_text:gsub( ".+/", "" )
-	local files = fs.list( dir or "" )
+	local files = fs.isDir( dir ) and fs.list( dir ) or {}
 	local r = {}
+
+	if not cur_text:find "/" then
+		local t = workspace.get_workspace_list( workspace.WORKSPACE_EMPTY ):names()
+
+		for i = #t, 1, -1 do
+			t[i] = "@" .. t[i]
+
+			if t[i]:find( "^" .. escape_patterns( cur_text ) ) then
+				r[#r + 1] = t[i]
+			else
+				table.remove( t, i )
+			end
+		end
+	end
 
 	for i = 1, #files do
 		if files[i]:find( "^" .. escape_patterns( file ) ) then
-			r[#r + 1] = files[i]
+			r[#r + 1] = begin .. files[i]
 		end
 	end
 

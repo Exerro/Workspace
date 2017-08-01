@@ -1,5 +1,4 @@
 
--- @localise workspace
 -- @define parent_workspace(name) if _G.workspace and _G.workspace ~= workspace then return _G.workspace.name() end
 -- @define parent_workspace(name, x) if _G.workspace and _G.workspace ~= workspace then return _G.workspace.name(x) end
 -- @define parent_workspace(name, x, y) if _G.workspace and _G.workspace ~= workspace then return _G.workspace.name(x, y) end
@@ -20,6 +19,7 @@ local function names( t )
 	return r
 end
 
+-- @localise workspace
 workspace = {
 	WORKSPACE_INVALID = 0,
 	WORKSPACE_NOCONFIG = 1,
@@ -280,7 +280,12 @@ function workspace.open( wname )
 	local config, err = workspace.read_config( wname )
 
 	if config then
-		local links = { ["workspace.lua"] = shell.getRunningProgram() }; for k, v in pairs( config.links ) do links[k] = v end
+		local links = { ["workspace.lua"] = shell.getRunningProgram() }
+
+		for k, v in pairs( config.links ) do
+			links[k] = v:gsub( "^@([^/]+)", workspace.get_path, 1 )
+		end
+
 		local env = create_sub_environment( workspace.get_path( wname ), links, workspace.get_API() )
 		local h = assert0( fs.open( "rom/programs/shell.lua", "r" ) or fs.open( "rom/programs/shell", "r" ), "Failed to read shell" )
 		local shell_contents = h.readAll()
