@@ -69,10 +69,6 @@ function autocomplete( shell, par_number, cur_text, last_text )
 					suggestions[i] = suggestions[i] .. " "
 				end
 			end
-
-			if ("--interactive"):find( "^" .. escape_patterns( cur_text ) ) then
-				insert( suggestions, ("--interactive"):sub( #cur_text + 1 ) )
-			end
 		end
 
 		if #suggestions == 0 then

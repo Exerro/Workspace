@@ -83,7 +83,6 @@ local function get_command_and_data( args )
 	local parameters = {}
 	local flags = {}
 	local warnings = {}
-	local interactive = false
 
 	while t.commands do
 		local cmd = args[1]
@@ -114,14 +113,8 @@ local function get_command_and_data( args )
 		end
 	end
 
-	interactive = t.commands ~= nil or #parameters < #t.params
-
 	for i = 1, #t.flags do
 		flags[t.flags[i]] = false
-	end
-
-	if interactive then
-		flags.interactive = false
 	end
 
 	while args[1] do
@@ -139,17 +132,6 @@ local function get_command_and_data( args )
 				pop_bottom( args )
 				break
 			end
-		end
-
-		if not set and interactive and (args[1] == "--interactive" or args[1] == "-i") then
-			if flags.interactive then
-				insert( warnings, "duplicated flag set 'interactive'" )
-			else
-				flags.interactive = true
-			end
-
-			set = true
-			pop_bottom( args )
 		end
 
 		if not set then
@@ -173,10 +155,6 @@ local function filter_command_list( list, cur_text )
 		elseif list[i].alias and ("-" .. list[i].alias):find( "^" .. escape_patterns( cur_text ) ) then
 			insert( t, list[i].alias:sub( #cur_text ) .. " " )
 		end
-	end
-
-	if ("--interactive"):find( "^" .. escape_patterns( cur_text ) ) then
-		insert( t, ("--interactive"):sub( #cur_text + 1 ) )
 	end
 
 	return t
