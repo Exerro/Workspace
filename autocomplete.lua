@@ -41,7 +41,11 @@ function autocomplete( shell, par_number, cur_text, last_text )
 			elseif param == "path" then
 				suggestions = filter_text( file_find( cur_text, true ), cur_text )
 			elseif param == "config-option" then
-				suggestions = filter_text( { "install_path", "workspaces_path" }, cur_text )
+				local t = {}
+				for k, v in pairs( getconf() ) do
+					t[#t + 1] = k
+				end
+				suggestions = filter_text( t, cur_text )
 			elseif param == "config-value" then
 				local config_option = last_text[#last_text] or ""
 
