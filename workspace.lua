@@ -48,49 +48,25 @@ if command == "workspace.help" then
 	if flags.interactive then
 		return help_interactive( params[1] )
 	else
-		local y = 1
+		local w, h = term.getSize()
+		local lines = wordwrap( workspace.get_help_text( params[1] ), w )
+		local c = nil
+		local o = select( 2, term.getCursorPos() ) - 1
 
-		local function newline()
-			y = y + 1
-			if y > select( 2, term.getSize() ) - 2 then
+		for i = 1, #lines do
+			c = writef( lines[i], c, colours.white, colours.grey )
+			write "\n"
+
+			if i >= h - 2 then
 				local c = term.getTextColour()
 				term.setTextColour( colours.white )
-				write "\nPress any key to continue"
+				write "Press any key to continue"
 				os.pullEvent "key"
 				term.clearLine()
-				term.setCursorPos( 1, select( 2, term.getCursorPos() ) )
+				term.setCursorPos( 1, h )
 				term.setTextColour( c )
-			else
-				write "\n"
 			end
 		end
-
-		for line in workspace.get_help_text( params[1] ):gmatch "[^\n]+" do
-			term.setTextColour( colours.white )
-
-			for word in line:gmatch "%S+" do
-				if word:sub( 1, 1 ) == "<" or word:sub( 1, 1 ) == "[" or word:sub( 1, 1 ) == "'" or word:sub( 1, 1 ) == "`" then
-					term.setTextColour( colours.lightGrey )
-				end
-
-				if word == "-" then
-					term.setTextColour( colours.grey )
-				end
-
-				if #word > term.getSize() - term.getCursorPos() + 1 then
-					newline()
-				end
-
-				term.write( word:gsub( "^`", "", 1 ):gsub( "`$", "", 1 ) .. " " )
-
-				if word:sub( -1 ) == ">" or word:sub( -1 ) == "]" or word:sub( -1 ) == "'" or word:sub( -1 ) == "`" then
-					term.setTextColour( colours.white )
-				end
-			end
-
-			newline()
-		end
-		term.setTextColour( colours.white )
 	end
 elseif command == "workspace.init" then
 	shell.setCompletionFunction( shell.getRunningProgram(), autocomplete )
