@@ -23,7 +23,7 @@ function autocomplete( shell, par_number, cur_text, last_text )
 			end
 		end
 
-		if cmd == "workspace.link" then
+		if cmd == "workspace.link" or cmd == "workspace.config" then
 			return filter_command_list( command_data.commands, cur_text )
 		end
 
@@ -39,7 +39,17 @@ function autocomplete( shell, par_number, cur_text, last_text )
 			elseif param == "new-link-name" or param == "link-name" then
 				suggestions = filter_text( cur_text == "" and { "link-name" } or {}, cur_text )
 			elseif param == "path" then
-				suggestions = filter_text( file_find( cur_text ), cur_text )
+				suggestions = filter_text( file_find( cur_text, true ), cur_text )
+			elseif param == "config-option" then
+				suggestions = filter_text( { "install_path", "workspaces_path" }, cur_text )
+			elseif param == "config-value" then
+				local config_option = last_text[#last_text] or ""
+
+				if config_option == "install_path" or config_option == "workspaces_path" then
+					suggestions = filter_text( file_find( cur_text, false ), cur_text )
+				else
+					suggestions = {}
+				end
 			elseif param == "help-topic" then
 				local t = { "commands" }
 

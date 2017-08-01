@@ -2,7 +2,6 @@
 local ARGS = { ... }
 local root_interactive = false
 
--- @define WORKSPACE_DIR ('/workspaces')
 -- @define WORKSPACE_META ('{\n\tname = %q,\n\tlinks = {\n\t\t["rom"] = "rom"\n\t}\n}')
 
 -- @include lib
@@ -28,7 +27,12 @@ program = {
 		} },
 		{ name = "open", alias = "o", description = "Opens a workspace, or shows the open workspace if no name is given", flags = {}, params = { "workspace-name" } },
 		{ name = "close", alias = "x", description = "Closes the open workspace", flags = {}, params = {} },
-		{ name = "init", alias = nil, description = "Initialises workspace-related globals", flags = { "shell" }, params = {}, hidden = true }
+		{ name = "init", alias = nil, description = "Initialises workspace-related globals", flags = { "shell" }, params = {}, hidden = true },
+		{ name = "config", alias = "g", description = "Manages the workspace configuration", flags = {}, params = {}, commands = {
+			{ name = "set", alias = "s", description = "Sets a config option", flags = {}, params = { "config-option", "config-value" } },
+			{ name = "get", alias = "g", description = "Gets a config option", flags = {}, params = { "config-option" } },
+			{ name = "list", alias = "l", description = "Lists config options", flags = { "interactive" }, params = {} },
+		} }
 	}
 }
 
@@ -91,6 +95,12 @@ if command == "workspace.help" then
 	end
 elseif command == "workspace.init" then
 	shell.setCompletionFunction( shell.getRunningProgram(), autocomplete )
+
+	if not getconf() then
+		if not initconf() then
+			return error( "failed to initialise config", 0 )
+		end
+	end
 
 	if flags.shell then
 		shell.run "rom/startup"
@@ -198,6 +208,49 @@ elseif command == "workspace.open" then
 	end
 elseif command == "workspace.close" then
 	return assert0( workspace.close() )
+elseif command == "workspace.config" then
+	if flags.interactive then
+		return print( "`config --interactive` not yet implemented" ) or config_interactive( nil )
+	else
+		return error( "expected subcommand [set, get, list] for `workspace config`", 0 )
+	end
+elseif command == "workspace.config.set" then
+	if flags.interactive then
+		return print( "`config set --interactive` not yet implemented" ) or config_interactive( "set", params[1] )
+	end
+
+	if not params[1] then
+		return error( "expected config option name", 0 )
+	elseif not params[2] then
+		return error( "expected config option value", 0 )
+	end
+
+	local t = getconf()
+	t[params[1]] = params[2]
+	setconf( t )
+elseif command == "workspace.config.get" then
+	if flags.interactive then
+		return print( "`config get --interactive` not yet implemented" ) or config_interactive( "get", params[1] )
+	end
+
+	if not params[1] then
+		return error( "expected config option name", 0 )
+	end
+
+	print( getconf( params[1] ) or "nothing found" )
+elseif command == "workspace.config.list" then
+	if flags.interactive then
+		return print( "`config list --interactive` not yet implemented" ) or config_interactive( "list" )
+	end
+
+	for k, v in pairs( getconf() ) do
+		term.setTextColour( colours.white )
+		write( k )
+		term.setTextColour( colours.grey )
+		write " -> "
+		term.setTextColour( colours.lightGrey )
+		print( v )
+	end
 elseif command == "workspace" then
 	if flags.interactive then
 		return print( "`--interactive` not yet implemented" ) or interactive()

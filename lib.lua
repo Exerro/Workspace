@@ -77,9 +77,12 @@ function workspace.get_help_text( option )
 	end
 end
 
-function workspace.get_workspace_dir(...)
+function workspace.get_workspace_dir()
 	parent_workspace( get_workspace_dir )
-	return WORKSPACE_DIR
+	if not getconf "workspaces_path" then
+		print "Here"
+	end
+	return getconf "workspaces_path" or "/workspaces"
 end
 
 function workspace.exists( name, filter )
@@ -100,13 +103,13 @@ end
 function workspace.get_path( name )
 	parent_workspace( get_path, name )
 
-	return WORKSPACE_DIR .. "/" .. name
+	return workspace.get_workspace_dir() .. "/" .. name
 end
 
 function workspace.list_workspaces( filter )
 	parent_workspace( list_workspaces, filter )
 
-	local file_list = fs.list( WORKSPACE_DIR )
+	local file_list = fs.list( workspace.get_workspace_dir() )
 	local result = { names = names }
 
 	for i = 1, #file_list do
