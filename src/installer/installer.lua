@@ -1,5 +1,6 @@
 
 local h = http.get "https://api.github.com/repos/Exerro/Workspace/releases"
+local version = "v0.1.0"
 local file_url = "https://github.com/Exerro/Workspace/releases/download/v0.1.0/workspace.lua"
 local file_url_min = "https://github.com/Exerro/Workspace/releases/download/v0.1.0/workspace.min.lua"
 local install_path = "/"
@@ -167,31 +168,35 @@ if h then
 	local obj = parseValue( text )
 	local ver = obj[1]
 
-	local function compare_tags( a, b )
-		local i = 1
-		for d in a.tag:gmatch "%d+" do
-			local an = tonumber( d )
-			local bn = tonumber( b.tag:match( ("%d+%."):rep( i - 1 ) .. "(%d+)" .. ("%.%d+"):rep( 3 - i ) ) or "0" )
-			if an > bn then return true end
-			if bn > an then return false end
-			i = i + 1
+	if not obj.message then -- rate limit exceeded
+		local function compare_tags( a, b )
+			local i = 1
+			for d in a.tag:gmatch "%d+" do
+				local an = tonumber( d )
+				local bn = tonumber( b.tag:match( ("%d+%."):rep( i - 1 ) .. "(%d+)" .. ("%.%d+"):rep( 3 - i ) ) or "0" )
+				if an > bn then return true end
+				if bn > an then return false end
+				i = i + 1
+			end
+			return false
 		end
-		return false
-	end
 
-	for i = 2, #obj do
-		if comparetags( obj[i], ver ) then
-			ver = obj[i]
+		for i = 2, #obj do
+			if comparetags( obj[i], ver ) then
+				ver = obj[i]
+			end
 		end
-	end
 
-	for n = 1, #ver.assets do
-		local a = ver.assets[n].name
+		version = ver.tag
 
-		if a:find "^%w+%.lua$" then
-			file_url = ver.assets[n].browser_download_url
-		elseif a:find "^%w+%.min.lua$" then
-			file_url_min = ver.assets[n].browser_download_url
+		for n = 1, #ver.assets do
+			local a = ver.assets[n].name
+
+			if a:find "^%w+%.lua$" then
+				file_url = ver.assets[n].browser_download_url
+			elseif a:find "^%w+%.min.lua$" then
+				file_url_min = ver.assets[n].browser_download_url
+			end
 		end
 	end
 end
