@@ -19,13 +19,13 @@ local function option( t )
 			elseif ev[2] == keys.right and idx < #t then
 				idx = idx + 1
 			elseif ev[2] == keys.enter then
-				term.setCursorPos( 1, select( 2, term.getCursorPos() ) )
+				write "\n"
 				return t[idx]
 			end
 		end
 
 		term.clearLine()
-		term.setCursorPos( 1, select( 2, term.getCursorPos() ) + 1 )
+		term.setCursorPos( 1, select( 2, term.getCursorPos() ) )
 
 		for i = 1, #t do
 			term.write( i == idx and "[" or " " )
@@ -217,7 +217,7 @@ print( "Use default workspaces path (" .. workspaces_path .. ")?" )
 if option { default = 1, "Yes", "No" } == "No" then
 	print "Please enter workspaces path"
 	repeat
-		 install_path = read()
+		 workspaces_path = read()
 	until fs.isDir( workspaces_path ) or not fs.exists( workspaces_path ) or print( "Please enter a valid path" ) and false
 end
 
@@ -241,7 +241,7 @@ if h then
 		fs.makeDir( wdir )
 
 		for i, v in ipairs( fs.list "/" ) do
-			if not fs.isReadOnly( v ) and v ~= fs.getDir( workspaces_path ) then
+			if not fs.isReadOnly( v ) and v ~= (workspaces_path:match "([^/]+)/" or workspaces_path) then
 				print( "Moving " .. v )
 				fs.move( v, fs.combine( wdir, v ) )
 			end
@@ -281,13 +281,11 @@ if option { default = 1, "Yes", "No" } == "Yes" then
 	end
 end
 
-if fs.combine( install_path, "" ) ~= "" then
-	print "Alias workspace.lua ?"
-	startup_alias = option { default = 1, "workspace", "w", "<none>" }
+print "Alias workspace.lua ?"
+startup_alias = option { default = fs.combine( install_path, "" ) ~= "" and 1 or 2, "workspace", "w", "<none>" }
 
-	if startup_alias == "<none>" then
-		startup_alias = nil
-	end
+if startup_alias == "<none>" then
+	startup_alias = nil
 end
 
 if startup_init or startup_alias then
