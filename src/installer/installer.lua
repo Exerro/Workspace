@@ -184,7 +184,7 @@ if h then
 		end
 
 		for i = 2, #obj do
-			if comparetags( obj[i], ver ) then
+			if compare_tags( obj[i], ver ) then
 				ver = obj[i]
 			end
 		end
