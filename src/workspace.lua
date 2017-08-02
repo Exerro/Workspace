@@ -17,7 +17,7 @@ program = {
 	commands = {
 		{ name = "help", alias = "h", description = "Displays help", flags = { "interactive" }, params = { "help-topic" } },
 		{ name = "show", alias = "s", description = "Displays a list of all workspaces", flags = { "all" }, params = {} },
-		{ name = "create", alias = "c", description = "Creates a new workspace", flags = {}, params = { "new-workspace-name" } },
+		{ name = "create", alias = "c", description = "Creates a new workspace", flags = { "repair" }, params = { "new-workspace-name" } },
 		{ name = "remove", alias = "r", description = "Removes an existing workspace, use --hard to remove all workspace files", flags = { "hard" }, params = { "workspace-name" } },
 		{ name = "link", alias = "l", description = "Manages workspace links", flags = {}, params = {}, commands = {
 			{ name = "add", alias = "a", description = "Adds a link to the workspace", flags = {}, params = { "current-workspace-name", "new-link-name", "path" } },
@@ -96,7 +96,7 @@ elseif command == "workspace.show" then
 	textutils.pagedTabulate( colours.green, green, colours.orange, orange, colours.red, red )
 elseif command == "workspace.create" then
 	if params[1] then
-		return assert0( workspace.create( params[1] ) )
+		return assert0( workspace.create( params[1], flags.repair ) )
 	else
 		return error( "expected workspace name, got nothing", 0 )
 	end

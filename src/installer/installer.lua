@@ -5,9 +5,11 @@ local file_url = "https://github.com/Exerro/Workspace/releases/download/v0.1.0/w
 local file_url_min = "https://github.com/Exerro/Workspace/releases/download/v0.1.0/workspace.min.lua"
 local install_path = "/"
 local workspaces_path = "/workspaces"
+local repair_workspace = nil
 local startup_init = false
 local startup_workspace = nil
 local startup_alias = false
+local startup_commands = {}
 
 local function option( t )
 	local idx = t.default
@@ -243,10 +245,11 @@ if h then
 		local wname = read()
 		local wdir = fs.combine( workspaces_path, wname )
 
+		repair_workspace = wname
 		fs.makeDir( wdir )
 
 		for i, v in ipairs( fs.list "/" ) do
-			if not fs.isReadOnly( v ) and v ~= (workspaces_path:match "([^/]+)/" or workspaces_path) then
+			if not fs.isReadOnly( v ) and v ~= fs.combine( workspaces_path:match "([^/]+)/" or workspaces_path, "" ) then
 				print( "Moving " .. v )
 				fs.move( v, fs.combine( wdir, v ) )
 			end
@@ -287,10 +290,13 @@ if option { default = 1, "Yes", "No" } == "Yes" then
 end
 
 print "Alias workspace.lua ?"
-startup_alias = option { default = fs.combine( install_path, "" ) ~= "" and 1 or 2, "workspace", "w", "<none>" }
+startup_alias = option { default = fs.combine( install_path, "" ) ~= "" and 1 or 2, "workspace", "w", "<none>", "<other>" }
 
 if startup_alias == "<none>" then
 	startup_alias = nil
+elseif startup_alias == "<other>" then
+	print "Enter alias:"
+	startup_alias = read()
 end
 
 if startup_init or startup_alias then
@@ -298,16 +304,33 @@ if startup_init or startup_alias then
 
 	if h then
 		if startup_init then
-			h.writeLine( ([[shell.run %q]]):format( fs.combine( install_path, "workspace.lua init" ) ) )
+			startup_commands[#startup_commands + 1] = { "run", fs.combine( install_path, "workspace.lua init" ) }
 		end
 		if startup_alias then
-			h.writeLine( ([[shell.setAlias( %q, %q )]]):format( startup_alias, fs.combine( install_path, "workspace.lua" ) ) )
+			startup_commands[#startup_commands + 1] = { "setAlias", startup_alias, fs.combine( install_path, "workspace.lua" ) }
 		end
 		if startup_workspace then
-			h.writeLine( ([[shell.run %q]]):format( fs.combine( install_path, "workspace.lua open " .. startup_workspace ) ) )
+			startup_commands[#startup_commands + 1] = { "run", fs.combine( install_path, "workspace.lua open " .. startup_workspace ) }
 		end
+
+		for i = 1, #startup_commands do
+			local t = {}
+			for n = 2, #startup_commands[i] do
+				t[n - 1] = ("%q"):format( startup_commands[i][n] )
+			end
+			h.writeLine( ("shell.%s( %s )"):format( startup_commands[i][1], table.concat( t, ", " ) ) )
+		end
+
 		h.close()
 	else
 		return error( "Failed to write to startup", 0 )
 	end
+end
+
+if repair_workspace then
+	shell.run( fs.combine( install_path, "workspace.lua" ), "create", repair_workspace, "--repair" )
+end
+
+for i = 1, #startup_commands do
+	shell[startup_commands[i][1]]( unpack( startup_commands[i], 2 ) )
 end

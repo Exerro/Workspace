@@ -92,8 +92,8 @@ function workspace.exists( name, filter )
 	local mode = workspace.WORKSPACE_INVALID
 
 	if fs.isDir( path ) then
-		mode = #fs.list( path ) > 1 and workspace.WORKSPACE_VALID
-		    or fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) and workspace.WORKSPACE_EMPTY
+		mode = #fs.list( path ) > 1 and fs.exists( path .. "/.workspace" ) and workspace.WORKSPACE_VALID
+			or fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) and workspace.WORKSPACE_EMPTY
 			or workspace.WORKSPACE_NOCONFIG
 	end
 
@@ -117,7 +117,7 @@ function workspace.list_workspaces( filter )
 		local mode = workspace.WORKSPACE_INVALID
 
 		if fs.isDir( path ) then
-			mode = #fs.list( path ) > 1 and workspace.WORKSPACE_VALID
+			mode = #fs.list( path ) > 1 and fs.exists( path .. "/.workspace" ) and workspace.WORKSPACE_VALID
 			    or fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) and workspace.WORKSPACE_EMPTY
 				or workspace.WORKSPACE_NOCONFIG
 		end
@@ -130,16 +130,24 @@ function workspace.list_workspaces( filter )
 	return result
 end
 
-function workspace.create( name )
+function workspace.create( name, repair )
 	parent_workspace( create, name )
 
-	if workspace.exists( name, workspace.WORKSPACE_EMPTY ) then
+	local path = workspace.get_path( name )
+
+	if workspace.exists( name, workspace.WORKSPACE_EMPTY ) and not repair then
 		return false, "workspace '" .. name .. "' already exists"
 	else
-		local path = workspace.get_path( name )
+		if repair then
+			if not fs.isDir( path ) then
+				return false, "cannot repair workspace '" .. name .. "': not a directory"
+			end
+		else
+			fs.makeDir( path )
+		end
+
 		local h
 
-		fs.makeDir( path )
 		h = fs.open( path .. "/.workspace", "w" )
 
 		if h then
