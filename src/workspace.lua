@@ -1,12 +1,12 @@
 
 local ARGS = { ... }
 
--- @define WORKSPACE_DIR ('/workspaces')
 -- @define WORKSPACE_META ('{\n\tname = %q,\n\tlinks = {\n\t\t["rom"] = "rom"\n\t}\n}')
 
 -- @include lib
 -- @include autocomplete
 -- @include util
+-- @include interactive
 
 -- @localise program
 program = {
@@ -15,18 +15,23 @@ program = {
 	flags = {},
 	params = {},
 	commands = {
-		{ name = "help", alias = "h", description = "Displays help", flags = {}, params = { "help-topic" } },
-		{ name = "show", alias = "s", description = "Displays a list of all workspaces", flags = { "all", "interactive" }, params = {} },
-		{ name = "create", alias = "c", description = "Creates a new workspace", flags = {}, params = { "new-workspace-name" } },
+		{ name = "help", alias = "h", description = "Displays help", flags = { "interactive" }, params = { "help-topic" } },
+		{ name = "show", alias = "s", description = "Displays a list of all workspaces", flags = { "all" }, params = {} },
+		{ name = "create", alias = "c", description = "Creates a new workspace (--repair is internally used)", flags = { "repair" }, params = { "new-workspace-name" } },
 		{ name = "remove", alias = "r", description = "Removes an existing workspace, use --hard to remove all workspace files", flags = { "hard" }, params = { "workspace-name" } },
 		{ name = "link", alias = "l", description = "Manages workspace links", flags = {}, params = {}, commands = {
 			{ name = "add", alias = "a", description = "Adds a link to the workspace", flags = {}, params = { "current-workspace-name", "new-link-name", "path" } },
 			{ name = "remove", alias = "r", description = "Removes a link from the workspace", flags = {}, params = { "current-workspace-name", "link-name" } },
-			{ name = "list", alias = "l", description = "Lists all links of the workspace", flags = { "interactive" }, params = { "current-workspace-name" } }
+			{ name = "list", alias = "l", description = "Lists all links of the workspace", flags = {}, params = { "current-workspace-name" } }
 		} },
 		{ name = "open", alias = "o", description = "Opens a workspace, or shows the open workspace if no name is given", flags = {}, params = { "workspace-name" } },
 		{ name = "close", alias = "x", description = "Closes the open workspace", flags = {}, params = {} },
-		{ name = "init", alias = "i", description = "Initialises workspace-related globals", flags = { "shell" }, params = {}, hidden = true }
+		{ name = "init", alias = nil, description = "Initialises autocomplete (--shell is internally used)", flags = { "shell" }, params = {}, hidden = true },
+		{ name = "config", alias = "g", description = "Manages the workspace configuration", flags = {}, params = {}, commands = {
+			{ name = "set", alias = "s", description = "Sets a config option", flags = {}, params = { "config-option", "config-value" } },
+			{ name = "get", alias = "g", description = "Gets a config option", flags = {}, params = { "config-option" } },
+			{ name = "list", alias = "l", description = "Lists config options", flags = {}, params = {} },
+		} }
 	}
 }
 
@@ -41,64 +46,43 @@ term.setTextColour( colours.white )
 
 if command == "workspace.help" then
 	if flags.interactive then
-		return print( "`help --interactive` not yet implemented" ) or help_interactive()
+		return help_interactive( params[1] )
 	else
-		local y = 1
+		local w, h = term.getSize()
+		local lines = wordwrap( workspace.get_help_text( params[1] ), w )
+		local c = nil
+		local o = select( 2, term.getCursorPos() ) - 1
 
-		local function newline()
-			y = y + 1
-			if y > select( 2, term.getSize() ) - 2 then
+		for i = 1, #lines do
+			c = writef( lines[i], c, colours.white, colours.grey )
+			write "\n"
+
+			if i >= h - 2 then
 				local c = term.getTextColour()
 				term.setTextColour( colours.white )
-				write "\nPress any key to continue"
+				write "Press any key to continue"
 				os.pullEvent "key"
 				term.clearLine()
-				term.setCursorPos( 1, select( 2, term.getCursorPos() ) )
+				term.setCursorPos( 1, h )
 				term.setTextColour( c )
-			else
-				write "\n"
 			end
 		end
-
-		for line in workspace.get_help_text( params[1] ):gmatch "[^\n]+" do
-			term.setTextColour( colours.white )
-
-			for word in line:gmatch "%S+" do
-				if word:sub( 1, 1 ) == "<" or word:sub( 1, 1 ) == "[" or word:sub( 1, 1 ) == "'" or word:sub( 1, 1 ) == "`" then
-					term.setTextColour( colours.lightGrey )
-				end
-
-				if word == "-" then
-					term.setTextColour( colours.grey )
-				end
-
-				if #word > term.getSize() - term.getCursorPos() + 1 then
-					newline()
-				end
-
-				term.write( word:gsub( "^`", "", 1 ):gsub( "`$", "", 1 ) .. " " )
-
-				if word:sub( -1 ) == ">" or word:sub( -1 ) == "]" or word:sub( -1 ) == "'" or word:sub( -1 ) == "`" then
-					term.setTextColour( colours.white )
-				end
-			end
-
-			newline()
-		end
-		term.setTextColour( colours.white )
 	end
 elseif command == "workspace.init" then
 	shell.setCompletionFunction( shell.getRunningProgram(), autocomplete )
 
+	if not getconf() then
+		if not initconf() then
+			return error( "failed to initialise config", 0 )
+		end
+	end
+
 	if flags.shell then
+		shell.run "rom/startup"
 		shell.run "rom/programs/shell"
 	end
 elseif command == "workspace.show" then
-	if flags.interactive then
-		return print( "`show --interactive` not yet implemented" ) or show_interactive( flags.all )
-	end
-
-	local list = workspace.get_workspace_list( flags.all and workspace.WORKSPACE_INVALID or workspace.WORKSPACE_EMPTY )
+	local list = workspace.list_workspaces( flags.all and workspace.WORKSPACE_INVALID or workspace.WORKSPACE_EMPTY )
 	local maxwidth = 0
 	local red, orange, green = {}, {}, {}
 
@@ -111,31 +95,21 @@ elseif command == "workspace.show" then
 
 	textutils.pagedTabulate( colours.green, green, colours.orange, orange, colours.red, red )
 elseif command == "workspace.create" then
-	if flags.interactive then
-		return print( "`create --interactive` not yet implemented" ) or create_interactive( params[1] )
-	elseif params[1] then
-		return assert0( workspace.create( params[1] ) )
+	if params[1] then
+		return assert0( workspace.create( params[1], flags.repair ) )
 	else
 		return error( "expected workspace name, got nothing", 0 )
 	end
 elseif command == "workspace.remove" then
-	if flags.interactive then
-		return print( "`remove --interactive` not yet implemented" ) or create_interactive( params[1] )
-	elseif params[1] then
+	if params[1] then
 		return assert0( workspace.remove( params[1], flags.hard ) )
 	else
 		return error( "expected workspace name, got nothing", 0 )
 	end
 elseif command == "workspace.link" then
-	if flags.interactive then
-		return print( "`link --interactive` not yet implemented" ) or link_interactive( nil )
-	else
-		return error( "expected subcommand [add, remove, list] for `workspace link`", 0 )
-	end
+	return error( "expected subcommand [add, remove, list] for `workspace link`", 0 )
 elseif command == "workspace.link.add" then
-	if flags.interactive then
-		return print( "`link add --interactive` not yet implemented" ) or link_interactive( "add", params )
-	elseif params[1] then
+	if params[1] then
 		if params[2] then
 			params[3] = params[3] or params[2]
 		else
@@ -147,9 +121,7 @@ elseif command == "workspace.link.add" then
 		return error( "expected workspace name for `workspace link add`" )
 	end
 elseif command == "workspace.link.remove" then
-	if flags.interactive then
-		return print( "`link remove --interactive` not yet implemented" ) or link_interactive( "remove", params )
-	elseif params[1] then
+	if params[1] then
 		if not params[2] then
 			return error( "expected link name for `workspace link remove`" )
 		end
@@ -159,9 +131,7 @@ elseif command == "workspace.link.remove" then
 		return error( "expected workspace name for `workspace link remove`" )
 	end
 elseif command == "workspace.link.list" then
-	if flags.interactive then
-		return print( "`link list --interactive` not yet implemented" ) or link_interactive( "list", params )
-	elseif params[1] then
+	if params[1] then
 		local links = workspace.list_links( params[1] )
 
 		for i = 1, #links do
@@ -176,9 +146,7 @@ elseif command == "workspace.link.list" then
 		return error( "expected workspace name for `workspace link list`" )
 	end
 elseif command == "workspace.open" then
-	if flags.interactive then
-		return print( "`open --interactive` not yet implemented" ) or open_interactive()
-	elseif params[1] then
+	if params[1] then
 		return assert0( workspace.open( params[1] ) )
 	else
 		local active = workspace.get_active()
@@ -195,12 +163,35 @@ elseif command == "workspace.open" then
 	end
 elseif command == "workspace.close" then
 	return assert0( workspace.close() )
-elseif command == "workspace" then
-	if flags.interactive then
-		return print( "`--interactive` not yet implemented" ) or interactive()
-	else
-		return error( "expected valid subcommand after `workspace`", 0 )
+elseif command == "workspace.config" then
+	return error( "expected subcommand [set, get, list] for `workspace config`", 0 )
+elseif command == "workspace.config.set" then
+	if not params[1] then
+		return error( "expected config option name", 0 )
+	elseif not params[2] then
+		return error( "expected config option value", 0 )
 	end
+
+	local t = getconf()
+	t[params[1]] = params[2]
+	setconf( t )
+elseif command == "workspace.config.get" then
+	if not params[1] then
+		return error( "expected config option name", 0 )
+	end
+
+	print( getconf( params[1] ) or "nothing found" )
+elseif command == "workspace.config.list" then
+	for k, v in pairs( getconf() ) do
+		term.setTextColour( colours.white )
+		write( k )
+		term.setTextColour( colours.grey )
+		write " = "
+		term.setTextColour( colours.lightGrey )
+		print( v )
+	end
+elseif command == "workspace" then
+	return error( "expected valid subcommand after `workspace`", 0 )
 else
 	error( command, table.concat( params, ", " ) )
 end

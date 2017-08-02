@@ -23,7 +23,7 @@ function autocomplete( shell, par_number, cur_text, last_text )
 			end
 		end
 
-		if cmd == "workspace.link" then
+		if cmd == "workspace.link" or cmd == "workspace.config" then
 			return filter_command_list( command_data.commands, cur_text )
 		end
 
@@ -31,7 +31,7 @@ function autocomplete( shell, par_number, cur_text, last_text )
 			local param = command_data.params[#params + 1]
 
 			if param == "workspace-name" or param == "current-workspace-name" then
-				suggestions = filter_text( workspace.get_workspace_list( workspace.WORKSPACE_EMPTY ):names(), cur_text )
+				suggestions = filter_text( workspace.list_workspaces( workspace.WORKSPACE_EMPTY ):names(), cur_text )
 			elseif param == "new-workspace-name" then
 				suggestions = cur_text == "" and { "workspace-name" } or {}
 			elseif param == "link-name" and wname then
@@ -39,7 +39,21 @@ function autocomplete( shell, par_number, cur_text, last_text )
 			elseif param == "new-link-name" or param == "link-name" then
 				suggestions = filter_text( cur_text == "" and { "link-name" } or {}, cur_text )
 			elseif param == "path" then
-				suggestions = filter_text( file_find( cur_text ), cur_text )
+				suggestions = filter_text( file_find( cur_text, true ), cur_text )
+			elseif param == "config-option" then
+				local t = {}
+				for k, v in pairs( getconf() ) do
+					t[#t + 1] = k
+				end
+				suggestions = filter_text( t, cur_text )
+			elseif param == "config-value" then
+				local config_option = last_text[#last_text] or ""
+
+				if config_option == "install_path" or config_option == "workspaces_path" then
+					suggestions = filter_text( file_find( cur_text, false ), cur_text )
+				else
+					suggestions = {}
+				end
 			elseif param == "help-topic" then
 				local t = { "commands" }
 
@@ -50,23 +64,19 @@ function autocomplete( shell, par_number, cur_text, last_text )
 				suggestions = filter_text( t, cur_text )
 			end
 
-			if ("--interactive"):find( "^" .. escape_patterns( cur_text ) ) then
-				insert( suggestions, ("--interactive"):sub( #cur_text + 1 ) )
+			if #params < #command_data.params - 1 then
+				for i = 1, #suggestions do
+					suggestions[i] = suggestions[i] .. " "
+				end
 			end
 		end
 
-		if #suggestions == 0 then
-			for k, v in pairs( flags ) do
-				if not v then
-					if cur_text == "" or ("--" .. k):find( "^" .. escape_patterns( cur_text ) ) then
-						insert( suggestions, "--" .. k )
-					elseif ("-" .. k:sub( 1, 1 )):find( "^" .. escape_patterns( cur_text:sub( 1, 1 ) ) ) then
-						insert( suggestions, "-" .. k:sub( 1, 1 ) )
-					end
+		for k, v in pairs( flags ) do
+			if not v then
+				if cur_text == "" or ("--" .. k):find( "^" .. escape_patterns( cur_text ) ) then
+					insert( suggestions, ("--" .. k):sub( #cur_text + 1 ) )
 				end
 			end
-
-			suggestions = filter_text( suggestions, cur_text )
 		end
 
 		return suggestions

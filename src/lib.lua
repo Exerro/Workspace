@@ -1,5 +1,4 @@
 
--- @localise workspace
 -- @define parent_workspace(name) if _G.workspace and _G.workspace ~= workspace then return _G.workspace.name() end
 -- @define parent_workspace(name, x) if _G.workspace and _G.workspace ~= workspace then return _G.workspace.name(x) end
 -- @define parent_workspace(name, x, y) if _G.workspace and _G.workspace ~= workspace then return _G.workspace.name(x, y) end
@@ -20,6 +19,7 @@ local function names( t )
 	return r
 end
 
+-- @localise workspace
 workspace = {
 	WORKSPACE_INVALID = 0,
 	WORKSPACE_NOCONFIG = 1,
@@ -77,15 +77,12 @@ function workspace.get_help_text( option )
 	end
 end
 
-function workspace.get_workspace_dir(...)
+function workspace.get_workspace_dir()
 	parent_workspace( get_workspace_dir )
-	return WORKSPACE_DIR
-end
-
-function workspace.get_path( name )
-	parent_workspace( get_path, name )
-
-	return WORKSPACE_DIR .. "/" .. name
+	if not getconf "workspaces_path" then
+		print "Here"
+	end
+	return getconf "workspaces_path" or "/workspaces"
 end
 
 function workspace.exists( name, filter )
@@ -95,28 +92,24 @@ function workspace.exists( name, filter )
 	local mode = workspace.WORKSPACE_INVALID
 
 	if fs.isDir( path ) then
-		mode = workspace.WORKSPACE_NOCONFIG
-
-		if fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) then
-			mode = workspace.WORKSPACE_EMPTY
-
-			if #fs.list( path ) > 1 then
-				mode = workspace.WORKSPACE_VALID
-			end
-		end
+		mode = #fs.list( path ) > 1 and fs.exists( path .. "/.workspace" ) and workspace.WORKSPACE_VALID
+			or fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) and workspace.WORKSPACE_EMPTY
+			or workspace.WORKSPACE_NOCONFIG
 	end
 
-	if not filter or filter <= mode then
-		return path, mode
-	end
-
-	return nil, mode
+	return (not filter or filter <= mode) and path or nil, mode
 end
 
-function workspace.get_workspace_list( filter )
-	parent_workspace( get_workspace_list, filter )
+function workspace.get_path( name )
+	parent_workspace( get_path, name )
 
-	local file_list = fs.list( WORKSPACE_DIR )
+	return workspace.get_workspace_dir() .. "/" .. name
+end
+
+function workspace.list_workspaces( filter )
+	parent_workspace( list_workspaces, filter )
+
+	local file_list = fs.list( workspace.get_workspace_dir() )
 	local result = { names = names }
 
 	for i = 1, #file_list do
@@ -124,15 +117,9 @@ function workspace.get_workspace_list( filter )
 		local mode = workspace.WORKSPACE_INVALID
 
 		if fs.isDir( path ) then
-			mode = workspace.WORKSPACE_NOCONFIG
-
-			if fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) then
-				mode = workspace.WORKSPACE_EMPTY
-
-				if #fs.list( path ) > 1 then
-					mode = workspace.WORKSPACE_VALID
-				end
-			end
+			mode = #fs.list( path ) > 1 and fs.exists( path .. "/.workspace" ) and workspace.WORKSPACE_VALID
+			    or fs.exists( path .. "/.workspace" ) and not fs.isDir( path .. "/.workspace" ) and workspace.WORKSPACE_EMPTY
+				or workspace.WORKSPACE_NOCONFIG
 		end
 
 		if not filter or filter <= mode then
@@ -143,18 +130,24 @@ function workspace.get_workspace_list( filter )
 	return result
 end
 
-function workspace.create( name )
+function workspace.create( name, repair )
 	parent_workspace( create, name )
 
-	if workspace.exists( name, workspace.WORKSPACE_EMPTY ) then
+	local path = workspace.get_path( name )
+
+	if workspace.exists( name, workspace.WORKSPACE_EMPTY ) and not repair then
 		return false, "workspace '" .. name .. "' already exists"
-	elseif workspace.exists( name, workspace.WORKSPACE_NOCONFIG ) then
-		return false, "cannot create folder '" .. workspace.get_path( name ) .. "'"
 	else
-		local path = workspace.get_path( name )
+		if repair then
+			if not fs.isDir( path ) then
+				return false, "cannot repair workspace '" .. name .. "': not a directory"
+			end
+		else
+			fs.makeDir( path )
+		end
+
 		local h
 
-		fs.makeDir( path )
 		h = fs.open( path .. "/.workspace", "w" )
 
 		if h then
@@ -280,7 +273,12 @@ function workspace.open( wname )
 	local config, err = workspace.read_config( wname )
 
 	if config then
-		local links = { ["workspace.lua"] = shell.getRunningProgram() }; for k, v in pairs( config.links ) do links[k] = v end
+		local links = { ["workspace.lua"] = shell.getRunningProgram() }
+
+		for k, v in pairs( config.links ) do
+			links[k] = v:gsub( "^@([^/]+)", workspace.get_path, 1 )
+		end
+
 		local env = create_sub_environment( workspace.get_path( wname ), links, workspace.get_API() )
 		local h = assert0( fs.open( "rom/programs/shell.lua", "r" ) or fs.open( "rom/programs/shell", "r" ), "Failed to read shell" )
 		local shell_contents = h.readAll()

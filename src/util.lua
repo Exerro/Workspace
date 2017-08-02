@@ -10,6 +10,7 @@
 
 local function fmtcmd( cmd, nodesc )
 	return cmd.name
+		.. (cmd.alias and " (-" .. cmd.alias .. ")" or "")
 	    .. (#cmd.params > 0 and " <" or "") .. table.concat( cmd.params, "> <" ) .. (#cmd.params > 0 and ">" or "")
 	    .. (#cmd.flags > 0 and " [--" or "") .. table.concat( cmd.flags, "] [--" ) .. (#cmd.flags > 0 and "]" or "")
 	    .. (nodesc and "" or " - " .. cmd.description)
@@ -27,6 +28,32 @@ end
 
 local function assert0( a, ... )
 	return a or error( ..., 0 ), ...
+end
+
+local function getconf( idx )
+	local h = fs.open( ".workspace", "r" )
+	local contents = h and h.readAll() or ""
+	if h then h.close() end
+	local data = textutils.unserialize( contents )
+	return type( data ) == "table" and (idx and data[idx] or data) or nil
+end
+
+local function setconf( conf )
+	local data = textutils.serialize( conf )
+	local h = fs.open( ".workspace", "w" )
+	if h then
+		h.write( data )
+		h.close()
+		return true
+	end
+	return false
+end
+
+local function initconf()
+	return setconf {
+		workspaces_path = "/workspaces";
+		install_path = fs.getDir( shell.getRunningProgram() );
+	}
 end
 
 local function getcmd( name )
@@ -56,14 +83,13 @@ local function get_command_and_data( args )
 	local parameters = {}
 	local flags = {}
 	local warnings = {}
-	local interactive = false
 
 	while t.commands do
 		local cmd = args[1]
 		local set = false
 
 		for i = 1, #t.commands do
-			if t.commands[i].name == cmd or "-" .. t.commands[i].alias == cmd then
+			if t.commands[i].name == cmd or t.commands[i].alias and "-" .. t.commands[i].alias == cmd then
 				command = command .. "." .. t.commands[i].name
 				pop_bottom( args )
 				t = t.commands[i]
@@ -87,14 +113,8 @@ local function get_command_and_data( args )
 		end
 	end
 
-	interactive = t.commands ~= nil or #parameters < #t.params
-
 	for i = 1, #t.flags do
 		flags[t.flags[i]] = false
-	end
-
-	if interactive then
-		flags.interactive = false
 	end
 
 	while args[1] do
@@ -114,17 +134,6 @@ local function get_command_and_data( args )
 			end
 		end
 
-		if not set and interactive and (args[1] == "--interactive" or args[1] == "-i") then
-			if flags.interactive then
-				insert( warnings, "duplicated flag set 'interactive'" )
-			else
-				flags.interactive = true
-			end
-
-			set = true
-			pop_bottom( args )
-		end
-
 		if not set then
 			break
 		end
@@ -142,14 +151,10 @@ local function filter_command_list( list, cur_text )
 
 	for i = 1, #list do
 		if cur_text == "" or list[i].name:find( "^" .. escape_patterns( cur_text ) ) then
-			insert( t, list[i].name:sub( #cur_text + 1 ) )
-		elseif ("-" .. list[i].alias):find( "^" .. escape_patterns( cur_text ) ) then
-			insert( t, list[i].alias:sub( #cur_text ) )
+			insert( t, list[i].name:sub( #cur_text + 1 ) .. " " )
+		elseif list[i].alias and ("-" .. list[i].alias):find( "^" .. escape_patterns( cur_text ) ) then
+			insert( t, list[i].alias:sub( #cur_text ) .. " " )
 		end
-	end
-
-	if ("--interactive"):find( "^" .. escape_patterns( cur_text ) ) then
-		insert( t, ("--interactive"):sub( #cur_text + 1 ) )
 	end
 
 	return t
@@ -167,17 +172,105 @@ local function filter_text( list, cur_text )
 	return r
 end
 
-local function file_find( cur_text )
-	local dir = cur_text:match "(.+)/" or ""
+local function file_find( cur_text, incl_refs )
+	local begin = cur_text:match ".+/" or ""
+	local dir = (cur_text:match "(.+)/" or ""); if incl_refs then dir = dir:gsub( "^@([^/]+)", workspace.get_path, 1 ) end
 	local file = cur_text:gsub( ".+/", "" )
-	local files = fs.list( dir or "" )
+	local files = fs.isDir( dir ) and fs.list( dir ) or {}
 	local r = {}
 
 	for i = 1, #files do
 		if files[i]:find( "^" .. escape_patterns( file ) ) then
-			r[#r + 1] = files[i]
+			r[#r + 1] = begin .. files[i] .. (fs.isDir( dir .. "/" .. files[i] ) and "/" or "")
+		end
+	end
+
+	if incl_refs and not cur_text:find "/" then
+		local t = workspace.list_workspaces( workspace.WORKSPACE_EMPTY ):names()
+
+		for i = #t, 1, -1 do
+			t[i] = "@" .. t[i]
+
+			if t[i]:find( "^" .. escape_patterns( cur_text ) ) then
+				r[#r + 1] = t[i] .. "/"
+			else
+				table.remove( t, i )
+			end
 		end
 	end
 
 	return r
+end
+
+local function linewrap( text, len )
+	local i = 1
+	local s = nil
+	local sc = 0
+
+	while i <= len and i <= #text do
+		local ch = text:sub( i, i )
+
+		if ch == "\n" then
+			return text:sub( 1, i - 1 ), text:sub( i + 1 )
+		elseif ch:find "%s" then
+			if s and i == s + sc then
+				sc = sc + 1
+			else
+				s = i
+				sc = 1
+			end
+		end
+
+		i = i + 1
+	end
+
+	if i <= len then
+		return text, ""
+	elseif s then
+		return text:sub( 1, s - 1 ), text:sub( s + sc )
+	else
+		return text:sub( 1, len ), text:sub( len + 1 )
+	end
+end
+
+local function wordwrap( text, len )
+	local t = {}
+	t[1], text = linewrap( text, len )
+
+	while #text > 0 do
+		t[#t + 1], text = linewrap( text, len )
+	end
+
+	return t
+end
+
+local function writef( text, s, primary, secondary )
+	if s == "`" or s == "%]" or s == ">" then
+		term.setTextColour( secondary )
+
+		if text:find( s ) then
+			term.write( text:sub( 1, text:find( s ) ) )
+			text = text:match( "^.-" .. s .. "(.*)" )
+		else
+			term.write( text )
+			return s
+		end
+	end
+
+	term.setTextColour( primary )
+
+	if text:find "%[" or text:find "<" or text:find "`" then
+		local a, b, c = text:find "%[", text:find "<", text:find "`"
+		local _p = b and c and math.min( b, c ) or b or c
+		local p = a and _p and math.min( a, _p ) or a or _p
+
+		term.write( text:sub( 1, p - 1 ) )
+		term.setTextColour( secondary )
+		term.write( text:sub( p, p ) )
+
+		return writef( text:sub( p + 1 ), text:sub( p, p ) == "`" and "`" or text:sub( p, p ) == "<" and ">" or "%]", primary, secondary )
+	else
+		term.write( text )
+		return nil
+	end
 end
