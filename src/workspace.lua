@@ -17,7 +17,7 @@ program = {
 	commands = {
 		{ name = "help", alias = "h", description = "Displays help", flags = { "interactive" }, params = { "help-topic" } },
 		{ name = "show", alias = "s", description = "Displays a list of all workspaces", flags = { "all" }, params = {} },
-		{ name = "create", alias = "c", description = "Creates a new workspace", flags = { "repair" }, params = { "new-workspace-name" } },
+		{ name = "create", alias = "c", description = "Creates a new workspace (--repair is internally used)", flags = { "repair" }, params = { "new-workspace-name" } },
 		{ name = "remove", alias = "r", description = "Removes an existing workspace, use --hard to remove all workspace files", flags = { "hard" }, params = { "workspace-name" } },
 		{ name = "link", alias = "l", description = "Manages workspace links", flags = {}, params = {}, commands = {
 			{ name = "add", alias = "a", description = "Adds a link to the workspace", flags = {}, params = { "current-workspace-name", "new-link-name", "path" } },
@@ -26,7 +26,7 @@ program = {
 		} },
 		{ name = "open", alias = "o", description = "Opens a workspace, or shows the open workspace if no name is given", flags = {}, params = { "workspace-name" } },
 		{ name = "close", alias = "x", description = "Closes the open workspace", flags = {}, params = {} },
-		{ name = "init", alias = nil, description = "Initialises workspace-related globals", flags = { "shell" }, params = {}, hidden = true },
+		{ name = "init", alias = nil, description = "Initialises autocomplete (--shell is internally used)", flags = { "shell" }, params = {}, hidden = true },
 		{ name = "config", alias = "g", description = "Manages the workspace configuration", flags = {}, params = {}, commands = {
 			{ name = "set", alias = "s", description = "Sets a config option", flags = {}, params = { "config-option", "config-value" } },
 			{ name = "get", alias = "g", description = "Gets a config option", flags = {}, params = { "config-option" } },
@@ -186,7 +186,7 @@ elseif command == "workspace.config.list" then
 		term.setTextColour( colours.white )
 		write( k )
 		term.setTextColour( colours.grey )
-		write " -> "
+		write " = "
 		term.setTextColour( colours.lightGrey )
 		print( v )
 	end

@@ -327,6 +327,10 @@ if startup_init or startup_alias then
 	end
 end
 
+if startup_alias then
+	shell.run( fs.combine( install_path, "workspace.lua" ), "config set alias " .. startup_alias )
+end
+
 if repair_workspace then
 	shell.run( fs.combine( install_path, "workspace.lua" ), "create", repair_workspace, "--repair" )
 end
