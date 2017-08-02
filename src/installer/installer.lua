@@ -173,9 +173,9 @@ if h then
 	if not obj.message then -- rate limit exceeded
 		local function compare_tags( a, b )
 			local i = 1
-			for d in a.tag:gmatch "%d+" do
+			for d in a.tag_name:gmatch "%d+" do
 				local an = tonumber( d )
-				local bn = tonumber( b.tag:match( ("%d+%."):rep( i - 1 ) .. "(%d+)" .. ("%.%d+"):rep( 3 - i ) ) or "0" )
+				local bn = tonumber( b.tag_name:match( ("%d+%."):rep( i - 1 ) .. "(%d+)" .. ("%.%d+"):rep( 3 - i ) ) or "0" )
 				if an > bn then return true end
 				if bn > an then return false end
 				i = i + 1
@@ -189,7 +189,7 @@ if h then
 			end
 		end
 
-		version = ver.tag
+		version = ver.tag_name
 
 		for n = 1, #ver.assets do
 			local a = ver.assets[n].name
