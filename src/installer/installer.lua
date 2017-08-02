@@ -1,8 +1,8 @@
 
 local h = http.get "https://api.github.com/repos/Exerro/Workspace/releases"
-local version = "v0.1.0"
-local file_url = "https://github.com/Exerro/Workspace/releases/download/v0.1.0/workspace.lua"
-local file_url_min = "https://github.com/Exerro/Workspace/releases/download/v0.1.0/workspace.min.lua"
+local version = "v0.1.1"
+local file_url = "https://github.com/Exerro/Workspace/releases/download/v0.1.1/workspace.lua"
+local file_url_min = "https://github.com/Exerro/Workspace/releases/download/v0.1.1/workspace.min.lua"
 local install_path = "/"
 local workspaces_path = "/workspaces"
 local repair_workspace = nil

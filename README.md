@@ -18,8 +18,7 @@ To open your workspace, use `workspace open WorkspaceName`. You can get back to 
 There's fairly detailed help in-game, as well as a full command list, just use `workspace help` for more info.
 
 ### Install
-* `wget https://github.com/Exerro/Workspace/releases/download/v0.1.0/workspace.min.lua workspace.lua` ([GitHub download](https://github.com/Exerro/Workspace/releases))
-* `pastebin get 5tuchQr2 workspace.lua` ([Pastebin download](https://pastebin.com/5tuchQr2), deprecated)
+* `pastebin run VLZqdqQ7 v0.1.1/installer.lua` ([GitHub download](https://github.com/Exerro/Workspace/releases))
 
 You should be able to name the file anything.
 Note, this was built using a WIP preprocessor I've developed ([Amend](https://github.com/Exerro/Amend)). Build instructions will come soon, but the compiled output is perfectly readable.
